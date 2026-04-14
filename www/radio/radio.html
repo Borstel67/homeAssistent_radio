@@ -150,17 +150,30 @@
   document.getElementById('add').addEventListener('click', addStation);
   document.getElementById('reset').addEventListener('click', resetLocalStations);
 
-  (async function init() {
-    try {
-      await loadBaseRadios();
-      const override = loadOverride();
-      radios = mergeRadios(baseRadios, override);
-      renderStations();
-      statusEl.textContent = `Bereit. ${Object.keys(radios).length} Sender (inkl. lokale) geladen.`;
-    } catch (e) {
-      statusEl.textContent = 'Fehler: ' + e.message;
+(async function init() {
+  try {
+    await loadBaseRadios();
+    const override = loadOverride();
+    radios = mergeRadios(baseRadios, override);
+
+    // Letzten Sender (falls vorhanden) vorselektieren
+    const last = localStorage.getItem(LAST_KEY);
+    renderStations(last && radios[last] ? last : undefined);
+
+    statusEl.textContent = `Bereit. ${Object.keys(radios).length} Sender (inkl. lokale) geladen.`;
+
+    // Autoplay: letzten Sender automatisch starten (Browser kann das blocken)
+    if (last && radios[last]) {
+      stationSel.value = last;
+      // kleines Delay, damit UI sicher gerendert ist
+      setTimeout(() => {
+        playSelected();
+      }, 200);
     }
-  })();
+  } catch (e) {
+    statusEl.textContent = 'Fehler: ' + e.message;
+  }
+})();
 </script>
 </body>
 </html>
