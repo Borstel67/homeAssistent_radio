@@ -152,34 +152,66 @@
   function saveAutoplaySetting(enabled) {
     localStorage.setItem(AP_KEY, enabled ? '1' : '0');
   }
+function looksLikeM3U(url) {
+  return /\.m3u(\?.*)?$/i.test(url);
+}
 
-  function playSelected() {
-    const name = getSelectedName();
-    const url = radios[name];
+function isHttpUrl(s) {
+  return /^https?:\/\//i.test(s);
+}
 
-    if (!url) {
-      statusEl.textContent = 'Kein Stream für Auswahl gefunden.';
-      return;
-    }
+async function resolveIfM3U(url) {
+  if (!looksLikeM3U(url)) return url;
 
-    // merken für "letzter Sender"
-    localStorage.setItem(LAST_KEY, name);
+  let res;
+  try {
+    res = await fetch(url, { cache: 'no-store' });
+  } catch (e) {
+    throw new Error('M3U konnte nicht geladen werden (evtl. CORS blockiert).');
+  }
+  if (!res.ok) throw new Error(`M3U nicht ladbar (${res.status})`);
 
-    audio.src = url;
+  const text = await res.text();
+
+  // Kommentare (#EXTM3U, #EXTINF, ...) ignorieren -> erste echte URL nehmen
+  const lines = text
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith('#'));
+
+  const firstUrl = lines.find(isHttpUrl);
+  if (!firstUrl) throw new Error('In der M3U keine Stream-URL gefunden');
+
+  return firstUrl;
+}
+  
+async function playSelected() {
+  const name = getSelectedName();
+  const originalUrl = radios[name];
+
+  if (!originalUrl) {
+    statusEl.textContent = 'Kein Stream für Auswahl gefunden.';
+    return;
+  }
+
+  // merken für "letzter Sender"
+  localStorage.setItem(LAST_KEY, name);
+
+  try {
+    statusEl.textContent = `Lade: ${name}…`;
+
+    const resolvedUrl = await resolveIfM3U(originalUrl);
+
+    audio.src = resolvedUrl;
     applyVolumeFromSlider();
 
-    audio.play()
-      .then(() => statusEl.textContent = `Spiele: ${name}`)
-      .catch(err => statusEl.textContent = `Play fehlgeschlagen: ${err}`);
+    await audio.play();
+    statusEl.textContent = `Spiele: ${name}`;
+  } catch (err) {
+    statusEl.textContent = `Play fehlgeschlagen: ${err}`;
   }
-
-  function stop() {
-    audio.pause();
-    audio.removeAttribute('src');
-    audio.load();
-    statusEl.textContent = 'Gestoppt.';
-  }
-
+}
+  
   function addStation() {
     const name = (newNameEl.value || '').trim();
     const url = (newUrlEl.value || '').trim();
@@ -207,7 +239,7 @@
   }
 
   // Events
-  document.getElementById('play').addEventListener('click', playSelected);
+  document.getElementById('play').addEventListener('click', () => playSelected());
   document.getElementById('stop').addEventListener('click', stop);
   document.getElementById('add').addEventListener('click', addStation);
   document.getElementById('reset').addEventListener('click', resetLocalStations);
