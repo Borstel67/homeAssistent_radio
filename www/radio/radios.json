@@ -1,6 +1,7 @@
 {
   "Oldie Antenne": "https://s1-webradio.oldie-antenne.de/oldie-antenne/stream/aacp",
-  "MDR Actuell (m3u High)": "https://avw.mdr.de/streams/284340-0_mp3_high.m3u",
+  "MDR Aktuell": "https://mdr-edge-105c-dus-dtag-cdn.cast.addradio.de/mdr/aktuell/live/mp3/56/stream.mp3",
+  "MDR Klassik": "https://mdr-edge-105b-dus-dtag-cdn.cast.addradio.de/mdr/klassik/live/mp3/56/stream.mp3",
   "Deutschlandfunk": "https://st01.dlf.de/dlf/01/128/mp3/stream.mp3",
   "Radio Paradise": "https://stream.radioparadise.com/mp3-192",
   "SomaFM Groove Salad": "https://ice1.somafm.com/groovesalad-128-mp3"
